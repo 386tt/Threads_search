@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threads精确搜索工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"],
+        input[type="search"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="search"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .search-button:hover {
+            background: #5568d3;
+        }
+
+        .search-button:active {
+            transform: scale(0.98);
+        }
+
+        .search-suggestions {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .search-suggestions.show {
+            display: block;
+        }
+
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #333;
+            transition: background 0.2s;
+        }
+
+        .suggestion-item:hover {
+            background: #e0e0e0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .profile-search {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .profile-input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .profile-input-group input {
+            flex: 1;
+        }
+
+        .profile-input-group button {
+            padding: 10px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .profile-input-group button:hover {
+            background: #5568d3;
+        }
+
+        .search-types {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-type-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .search-type-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .search-type-btn:hover {
+            border-color: #667eea;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            padding: 10px 12px;
+            background: #f0f7ff;
+            border: 1px solid #667eea;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .options-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .options-section h3 {
+            color: #333;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .option-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .option-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .checkbox-label input {
+            margin-right: 8px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .syntax-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+        }
+
+        .syntax-section h3 {
+            color: #333;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .syntax-categories {
+            display: grid;
+            gap: 12px;
+        }
+
+        .syntax-category {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .syntax-category-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .syntax-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .syntax-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #333;
+            transition: all 0.2s;
+            font-family: 'Courier New', monospace;
+            white-space: nowrap;
+        }
+
+        .syntax-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .syntax-btn code {
+            font-weight: 600;
+        }
+
+        .advanced-input-group {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .advanced-input-group.show {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .advanced-input-group label {
+            font-size: 12px;
+            color: #333;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .advanced-input-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            flex: 1;
+        }
+
+        .advanced-input-group button {
+            padding: 8px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .advanced-input-group button:hover {
+            background: #5568d3;
+        }
+
+        .history-section {
+            margin-bottom: 20px;
+        }
+
+        .history-section h3 {
+            color: #333;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .history-item {
+            padding: 6px 12px;
+            background: #f0f7ff;
+            border: 1px solid #667eea;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-item:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .history-item .close {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .clear-history {
+            font-size: 11px;
+            color: #999;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .clear-history:hover {
+            color: #333;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #1565c0;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .search-input-wrapper {
+                flex-direction: column;
+            }
+
+            .search-button {
+                width: 100%;
+            }
+
+            .option-group {
+                grid-template-columns: 1fr;
+            }
+
+            .search-types {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .profile-search {
+                grid-template-columns: 1fr;
+            }
+
+            .syntax-buttons {
+                gap: 5px;
+            }
+
+            .syntax-btn {
+                padding: 5px 8px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Threads精确搜索工具</h1>
+            <p>高效搜索Threads内容 · 支持Google和官方搜索</p>
+        </div>
+
+        <div class="info-box">
+            💡 提示：Threads官方搜索有限制，建议同时使用Google搜索或访问个人资料查看历史帖子
+        </div>
+
+        <!-- 标签页 -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('search')">🔍 搜索</button>
+            <button class="tab-btn" onclick="switchTab('profile')">👤 个人资料</button>
+            <button class="tab-btn" onclick="switchTab('tools')">🛠️ 工具</button>
+        </div>
+
+        <!-- 搜索标签页 -->
+        <div id="search-tab" class="tab-content active">
+            <div class="search-box">
+                <label for="searchInput">搜索内容：</label>
+                <div class="search-input-wrapper">
+                    <input
+                        type="search"
+                        id="searchInput"
+                        placeholder="输入关键词或帖子内容"
+                        onkeypress="handleKeyPress(event)"
+                        oninput="showSearchSuggestions()"
+                    >
+                    <button class="search-button" onclick="executeSearch()">搜索</button>
+                </div>
+                <div class="search-suggestions" id="searchSuggestions"></div>
+            </div>
+
+            <div class="search-types">
+                <button class="search-type-btn active" onclick="selectSearchType('google')" data-type="google">
+                    🔍 Google
+                </button>
+                <button class="search-type-btn" onclick="selectSearchType('threads')" data-type="threads">
+                    📱 Threads
+                </button>
+                <button class="search-type-btn" onclick="selectSearchType('both')" data-type="both">
+                    ⚡ 两个都搜
+                </button>
+            </div>
+
+            <div class="quick-actions">
+                <button class="action-btn" onclick="addSyntax('\"keyword\"')">精确短语</button>
+                <button class="action-btn" onclick="addSyntax('-word')">排除词</button>
+                <button class="action-btn" onclick="addSyntax('keyword1 OR keyword2')">OR逻辑</button>
+                <button class="action-btn" onclick="showAuthorInput()">按用户@</button>
+                <button class="action-btn" onclick="addDateFilter('week')">最近一周</button>
+                <button class="action-btn" onclick="addDateFilter('month')">最近一月</button>
+            </div>
+
+            <div class="options-section">
+                <h3>⚙️ 搜索选项</h3>
+                <div class="option-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="exactMatch">
+                        精确匹配
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="recentOnly">
+                        最近内容
+                    </label>
+                </div>
+            </div>
+
+            <div class="syntax-section">
+                <h3>📝 高级语法</h3>
+                <div class="syntax-categories">
+                    <div class="syntax-category">
+                        <div class="syntax-category-title">精确搜索</div>
+                        <div class="syntax-buttons">
+                            <button class="syntax-btn" onclick="addSyntax('\"exact\"')"><code>\"phrase\"</code></button>
+                            <button class="syntax-btn" onclick="addSyntax('-exclude')"><code>-word</code></button>
+                            <button class="syntax-btn" onclick="addSyntax('word1 OR word2')"><code>OR</code></button>
+                        </div>
+                    </div>
+                    <div class="syntax-category">
+                        <div class="syntax-category-title">时间过滤</div>
+                        <div class="syntax-buttons">
+                            <button class="syntax-btn" onclick="addDateFilter('week')"><code>过去7天</code></button>
+                            <button class="syntax-btn" onclick="addDateFilter('month')"><code>过去30天</code></button>
+                            <button class="syntax-btn" onclick="showDateInput()"><code>after:日期</code></button>
+                        </div>
+                    </div>
+                    <div class="syntax-category">
+                        <div class="syntax-category-title">用户搜索</div>
+                        <div class="syntax-buttons">
+                            <button class="syntax-btn" onclick="showAuthorInput()"><code>@username</code></button>
+                            <button class="syntax-btn" onclick="addSyntax('site:threads.net')"><code>site:</code></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 用户名输入框 -->
+                <div class="advanced-input-group" id="authorInput">
+                    <div>
+                        <label>用户名：</label>
+                        <input type="text" id="authorUsername" placeholder="karina_386tt">
+                    </div>
+                    <button onclick="confirmAuthor()">添加</button>
+                </div>
+
+                <!-- 日期输入框 -->
+                <div class="advanced-input-group" id="dateInput">
+                    <div>
+                        <label>日期：</label>
+                        <input type="date" id="dateValue">
+                    </div>
+                    <button onclick="confirmDate()">添加</button>
+                </div>
+            </div>
+
+            <!-- 搜索历史 -->
+            <div class="history-section" id="historySection" style="display:none;">
+                <h3>📋 搜索历史</h3>
+                <div class="history-list" id="historyList"></div>
+                <div class="clear-history" onclick="clearHistory()">清空历史</div>
+            </div>
+        </div>
+
+        <!-- 个人资料标签页 -->
+        <div id="profile-tab" class="tab-content">
+            <div class="profile-search">
+                <div>
+                    <label style="display:block; margin-bottom:8px; font-weight:600; font-size:13px;">访问用户资料</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="profileUsername" placeholder="输入用户名" onkeypress="handleProfileKeyPress(event)">
+                        <button class="search-button" onclick="visitProfile()">访问</button>
+                    </div>
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:8px; font-weight:600; font-size:13px;">在用户资料中搜索</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="profileSearchInput" placeholder="输入关键词" onkeypress="handleProfileSearchKeyPress(event)">
+                        <button class="search-button" onclick="searchInProfile()">搜索</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-actions" style="margin-bottom:20px;">
+                <button class="action-btn" onclick="quickVisitProfile('karina_386tt')">我的资料</button>
+                <button class="action-btn" onclick="quickSearchProfile('karina_386tt')">我的帖子搜索</button>
+            </div>
+
+            <div class="options-section">
+                <h3>🔗 快速链接</h3>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <a href="#" onclick="openLink('https://www.threads.net/'); return false;" style="color:#667eea; text-decoration:none; font-size:13px;">📱 Threads首页</a>
+                    <a href="#" onclick="openLink('https://www.threads.net/explore'); return false;" style="color:#667eea; text-decoration:none; font-size:13px;">🔥 探索页面</a>
+                    <a href="#" onclick="openLink('https://www.threads.net/notifications'); return false;" style="color:#667eea; text-decoration:none; font-size:13px;">🔔 通知中心</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 工具标签页 -->
+        <div id="tools-tab" class="tab-content">
+            <div class="options-section">
+                <h3>🎯 高级搜索组合</h3>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <button class="action-btn" style="grid-column:1/-1; background:#f0f7ff;" onclick="buildComplexSearch()">
+                        构建复杂查询
+                    </button>
+                    <button class="action-btn" onclick="searchByDate()">按日期范围搜索</button>
+                    <button class="action-btn" onclick="searchByKeywords()">多关键词搜索</button>
+                    <button class="action-btn" onclick="searchByEngagement()">高热度搜索</button>
+                    <button class="action-btn" onclick="searchRecent()">最新内容</button>
+                </div>
+            </div>
+
+            <div class="options-section">
+                <h3>💾 本地存储</h3>
+                <div style="font-size:12px; color:#666; line-height:1.6;">
+                    <p>✓ 自动保存搜索历史</p>
+                    <p>✓ 自动保存上次搜索词</p>
+                    <p id="storageInfo">存储大小：计算中...</p>
+                </div>
+                <button class="action-btn" style="margin-top:10px; background:#ffebee; color:#c62828;" onclick="clearAllData()">
+                    清空所有本地数据
+                </button>
+            </div>
+
+            <div class="options-section">
+                <h3>ℹ️ 使用提示</h3>
+                <div style="font-size:12px; color:#555; line-height:1.8;">
+                    <p>• Threads官方搜索功能有限，建议结合Google搜索</p>
+                    <p>• 直接访问用户资料是查找旧帖子的最可靠方法</p>
+                    <p>• 使用精确短语时用引号括起来</p>
+                    <p>• site:threads.net可限制在Threads内搜索</p>
+                    <p>• 按照发布时间搜索可以缩小范围</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSearchType = 'google';
+        const MAX_HISTORY = 10;
+
+        // 标签页切换
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function selectSearchType(type) {
+            currentSearchType = type;
+            document.querySelectorAll('.search-type-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') executeSearch();
+        }
+
+        function handleProfileKeyPress(event) {
+            if (event.key === 'Enter') visitProfile();
+        }
+
+        function handleProfileSearchKeyPress(event) {
+            if (event.key === 'Enter') searchInProfile();
+        }
+
+        // 添加语法到搜索框
+        function addSyntax(syntax) {
+            const input = document.getElementById('searchInput');
+            const currentValue = input.value.trim();
+            input.value = currentValue ? currentValue + ' ' + syntax : syntax;
+            input.focus();
+        }
+
+        // 显示搜索建议
+        function showSearchSuggestions() {
+            const input = document.getElementById('searchInput').value.trim();
+            const suggestionsBox = document.getElementById('searchSuggestions');
+
+            if (input.length < 2) {
+                suggestionsBox.classList.remove('show');
+                return;
+            }
+
+            const history = getSearchHistory();
+            const matches = history.filter(h => h.toLowerCase().includes(input.toLowerCase())).slice(0, 5);
+
+            if (matches.length === 0) {
+                suggestionsBox.classList.remove('show');
+                return;
+            }
+
+            suggestionsBox.innerHTML = matches.map(m =>
+                `<div class="suggestion-item" onclick="useSearchSuggestion('${m.replace(/'/g, "\\'")}')">${m}</div>`
+            ).join('');
+            suggestionsBox.classList.add('show');
+        }
+
+        function useSearchSuggestion(suggestion) {
+            document.getElementById('searchInput').value = suggestion;
+            document.getElementById('searchSuggestions').classList.remove('show');
+        }
+
+        // 显示作者输入框
+        function showAuthorInput() {
+            const inputGroup = document.getElementById('authorInput');
+            inputGroup.classList.toggle('show');
+            if (inputGroup.classList.contains('show')) {
+                document.getElementById('authorUsername').focus();
+            }
+        }
+
+        function confirmAuthor() {
+            const username = document.getElementById('authorUsername').value.trim();
+            if (username) {
+                addSyntax(`site:threads.net/@${username}`);
+                document.getElementById('authorInput').classList.remove('show');
+                document.getElementById('authorUsername').value = '';
+            }
+        }
+
+        function showDateInput() {
+            const inputGroup = document.getElementById('dateInput');
+            inputGroup.classList.toggle('show');
+            if (inputGroup.classList.contains('show')) {
+                document.getElementById('dateValue').focus();
+            }
+        }
+
+        function confirmDate() {
+            const date = document.getElementById('dateValue').value;
+            if (date) {
+                addSyntax(`after:${date}`);
+                document.getElementById('dateInput').classList.remove('show');
+                document.getElementById('dateValue').value = '';
+            }
+        }
+
+        function addDateFilter(period) {
+            const today = new Date();
+            const days = period === 'week' ? 7 : 30;
+            const startDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
+            const dateString = startDate.toISOString().split('T')[0];
+            addSyntax(`after:${dateString}`);
+        }
+
+        // 个人资料功能
+        function visitProfile() {
+            const username = document.getElementById('profileUsername').value.trim();
+            if (username) {
+                window.open(`https://www.threads.net/@${username}`, '_blank');
+                document.getElementById('profileUsername').value = '';
+            }
+        }
+
+        function searchInProfile() {
+            const username = document.getElementById('profileUsername').value.trim() || 'karina_386tt';
+            const keyword = document.getElementById('profileSearchInput').value.trim();
+            if (keyword) {
+                const query = `site:threads.net/@${username} ${keyword}`;
+                googleSearch(query);
+                saveSearchHistory(keyword);
+            }
+        }
+
+        function quickVisitProfile(username) {
+            window.open(`https://www.threads.net/@${username}`, '_blank');
+        }
+
+        function quickSearchProfile(username) {
+            document.getElementById('profileUsername').value = username;
+            document.getElementById('profileSearchInput').focus();
+        }
+
+        function openLink(url) {
+            window.open(url, '_blank');
+        }
+
+        // 高级搜索组合
+        function buildComplexSearch() {
+            const keyword = prompt('输入关键词：');
+            const username = prompt('输入用户名（可选）：');
+            const fromDate = prompt('从哪个日期开始搜索（YYYY-MM-DD，可选）：');
+
+            if (!keyword) return;
+
+            let query = `"${keyword}"`;
+            if (username) query += ` site:threads.net/@${username}`;
+            if (fromDate) query += ` after:${fromDate}`;
+
+            document.getElementById('searchInput').value = query;
+            executeSearch();
+        }
+
+        function searchByDate() {
+            switchTab('search');
+            document.getElementById('searchInput').focus();
+            setTimeout(() => {
+                alert('使用 after:YYYY-MM-DD 语法搜索特定日期之后的帖子');
+            }, 100);
+        }
+
+        function searchByKeywords() {
+            const keywords = prompt('输入多个关键词（用OR分隔）：\n例如：python OR javascript');
+            if (keywords) {
+                document.getElementById('searchInput').value = keywords;
+                switchTab('search');
+                executeSearch();
+            }
+        }
+
+        function searchRecent() {
+            const today = new Date();
+            const date = today.toISOString().split('T')[0];
+            document.getElementById('searchInput').value = `after:${date}`;
+            switchTab('search');
+            executeSearch();
+        }
+
+        // 搜索历史
+        function getSearchHistory() {
+            const history = localStorage.getItem('threadsSearchHistory');
+            return history ? JSON.parse(history) : [];
+        }
+
+        function saveSearchHistory(query) {
+            if (!query.trim()) return;
+            let history = getSearchHistory();
+            history = history.filter(h => h !== query);
+            history.unshift(query);
+            history = history.slice(0, MAX_HISTORY);
+            localStorage.setItem('threadsSearchHistory', JSON.stringify(history));
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            const history = getSearchHistory();
+            if (history.length === 0) {
+                document.getElementById('historySection').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('historySection').style.display = 'block';
+            document.getElementById('historyList').innerHTML = history.map(h =>
+                `<div class="history-item" onclick="useSearchHistory('${h.replace(/'/g, "\\'")}')" title="${h}">
+                    ${h.substring(0, 20)}${h.length > 20 ? '...' : ''}
+                    <span class="close" onclick="removeFromHistory('${h.replace(/'/g, "\\'")}')" style="margin-left:auto;">×</span>
+                </div>`
+            ).join('');
+        }
+
+        function useSearchHistory(query) {
+            document.getElementById('searchInput').value = query;
+            executeSearch();
+        }
+
+        function removeFromHistory(query) {
+            event.stopPropagation();
+            let history = getSearchHistory();
+            history = history.filter(h => h !== query);
+            localStorage.setItem('threadsSearchHistory', JSON.stringify(history));
+            updateHistoryDisplay();
+        }
+
+        function clearHistory() {
+            if (confirm('确定要清空搜索历史吗？')) {
+                localStorage.removeItem('threadsSearchHistory');
+                updateHistoryDisplay();
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('这将清空所有本地数据（搜索历史、缓存等）。确定吗？')) {
+                localStorage.clear();
+                updateHistoryDisplay();
+                alert('已清空所有数据');
+            }
+        }
+
+        // 构建搜索查询
+        function buildSearchQuery() {
+            const keyword = document.getElementById('searchInput').value.trim();
+            if (!keyword) {
+                alert('请输入搜索关键词');
+                return null;
+            }
+
+            let query = keyword;
+
+            if (document.getElementById('exactMatch').checked && !keyword.includes('"')) {
+                query = `"${query}"`;
+            }
+
+            if (document.getElementById('recentOnly').checked && !query.includes('after:')) {
+                const today = new Date();
+                const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                query += ` after:${sevenDaysAgo.toISOString().split('T')[0]}`;
+            }
+
+            return query;
+        }
+
+        // 执行搜索
+        function executeSearch() {
+            const query = buildSearchQuery();
+            if (!query) return;
+
+            saveSearchHistory(query);
+
+            if (currentSearchType === 'google') {
+                googleSearch(query);
+            } else if (currentSearchType === 'threads') {
+                threadsSearch(query);
+            } else if (currentSearchType === 'both') {
+                googleSearch(query);
+                setTimeout(() => threadsSearch(query), 500);
+            }
+        }
+
+        function googleSearch(query) {
+            const searchURL = `https://www.google.com/search?q=${encodeURIComponent(query + ' site:threads.net')}`;
+            window.open(searchURL, '_blank');
+        }
+
+        function threadsSearch(query) {
+            const searchURL = `https://www.threads.net/search?q=${encodeURIComponent(query)}`;
+            window.open(searchURL, '_blank');
+        }
+
+        // 页面加载初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateHistoryDisplay();
+
+            // 更新存储信息
+            const history = getSearchHistory();
+            const size = new Blob([JSON.stringify(history)]).size;
+            document.getElementById('storageInfo').textContent = `存储大小：${size} 字节 · 搜索记录：${history.length} 条`;
+
+            // 输入框焦点时显示建议
+            document.getElementById('searchInput').addEventListener('blur', function() {
+                setTimeout(() => {
+                    document.getElementById('searchSuggestions').classList.remove('show');
+                }, 200);
+            });
+        });
+    </script>
+</body>
+</html>
